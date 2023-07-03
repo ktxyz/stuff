@@ -37,3 +37,6 @@ venv/
 # VSCode
 .vscode/
 
+# CLion
+.idea/
+
