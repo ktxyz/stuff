@@ -14,8 +14,8 @@ int main() {
         int n;
         std::cin >> n;
 
-        std::vector<int> answers(n + 1, 0);
-        std::vector<std::pair<int, int>> arr;
+        std::vector<long long> answers(n + 1, 0);
+        std::vector<std::pair<long long, long long>> arr;
         arr.push_back({0, 0});
 
         for(int i = 0; i < n; i++) {
@@ -26,7 +26,7 @@ int main() {
 
         std::sort(arr.begin(), arr.end());
 
-        std::vector<int> prefix_sum(n + 1, 0);
+        std::vector<long long> prefix_sum(n + 1, 0);
         for(int i = 1; i <= n; i++) {
             prefix_sum[i] = prefix_sum[i - 1] + arr[i].first;
         }

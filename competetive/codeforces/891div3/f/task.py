@@ -1,42 +1,40 @@
 import math
-from collections import defaultdict
+from collections import Counter
 
 
 t = int(input())
 
 for _ in range(t):
     n = int(input())
-    arr = list(map(int, input().split()))
-    xmap = defaultdict(int)
+    arr = [*map(int, input().split())]
+    xmap = Counter(map(str, arr))
 
     for a in arr:
-        xmap[a] += 1
+        if a in xmap:
+            xmap[a] += 1
+        else:
+            xmap[a] = 0
     
     q = int(input())
     for _ in range(q):
         x, y = map(int, input().split())
 
-        delta = x**2 - 4 * y
+        delta = x * x - 4 * y
 
         if delta < 0:
-            print(0, end=' ')
-            continue
-        if delta == 0:
-            x = x / 2
-            print((xmap[x] * (xmap[x] - 1)) // 2, end=' ')
+            print(0)
             continue
 
-        x1 = (x - math.sqrt(delta)) / 2
-        x2 = (x + math.sqrt(delta)) / 2
+        delta_sqrt = int(math.sqrt(delta))
+        x1 = (x - delta_sqrt) // 2
+        x2 = (x + delta_sqrt) // 2
 
-        if x1.is_integer() and x2.is_integer():
-            x1 = int(x1)
-            x2 = int(x2)
-
-            if x1 == x2:
-                print((xmap[x1] * (xmap[x1] - 1)) // 2, end=' ')
-            else:
-                print(xmap[x1] * xmap[x2], end=' ')
+        if (x1 + x2 != x) or (x1 * x2 != y):
+            print(0)
         else:
-            print(0, end=' ')
-    print()
+            x1 = str(x1)
+            x2 = str(x2)
+            if x1 == x2:
+                print((xmap[x1] * (xmap[x1] - 1)) // 2)
+            else:
+                print(xmap[x1] * xmap[x2])
