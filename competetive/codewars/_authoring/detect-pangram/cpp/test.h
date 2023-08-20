@@ -3,55 +3,8 @@
 #include <string>
 #include <algorithm>
 
-char randomChar() {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<int> dis('a', 'z');
-    return static_cast<char>(dis(gen));
-}
-
-std::string generatePangram(size_t length) {
-    std::string pangram;
-    for(char c = 'a'; c <= 'z'; ++c)
-        pangram += c;
-    std::random_shuffle(pangram.begin(), pangram.end());
-    
-    while (pangram.length() < length) {
-        char ch = randomChar();
-        if (std::rand() % 10 == 0) {
-            const std::string punctuation = "!@#$%^&*()_-+={}[]|:;<>,.?/~";
-            pangram += punctuation[std::rand() % punctuation.size()];
-        } else if (std::rand() % 6 == 0) {
-            pangram += ' ';
-        } else {
-            pangram += randomChar();
-        }
-    }
-    
-    return pangram;
-}
-
-void randomTestCase(int size, int count) {
-    for (int i = 0; i < count; ++i) {
-        std::string randomString = generatePangram(size);
-
-        if (i % 2 == 1) {
-            char removedChar = randomChar();
-            randomString.erase(std::remove_if(randomString.begin(), randomString.end(), [removedChar](char c) { return c == removedChar; }), randomString.end());
-        }
-
-        for(auto &c : randomString)
-            if (std::rand() % 3 == 0)
-                c = toupper(c);
-
-        Assert::That(is_pangram(randomString), Equals(i % 2 == 0));
-    }
-}
-
-Describe(fixed_tests)
-{
-    It(test_pangrams)
-    {
+Describe(fixed_tests) {
+    It(test_pangrams) {
       std::vector<std::string> cases = {
             "The quick brown fox jumps over the lazy dog.",
             "Cwm fjord bank glyphs vext quiz",
@@ -61,32 +14,83 @@ Describe(fixed_tests)
       };
       
       for (auto &p : cases)
-        Assert::That(is_pangram(p), Equals(true));
+        Assert::That(is_pangram(p), Equals(true), [&]() { return "Incorrect answer for " + p; });
     };
   
-    It(test_non_pangrams)
-    {
+    It(test_non_pangrams) {
       std::vector<std::string> cases = {
             "This isn't a pangram!",
             "abcdefghijklm opqrstuvwxyz",
-            "Aacdefghijklmnopqrstuvwxyz"
+            "Aacdefghijklmnopqrstuvwxyz",
+            ""
       };
       
       for (auto &p : cases)
-          Assert::That(is_pangram(p), Equals(false));
+          Assert::That(is_pangram(p), Equals(false), [&]() { return "Incorrect answer for: " + p; });
     };
 };
 
 Describe(Random) {
+private:
+  std::string ascii;
+  std::string filler = " 0123456789!,.-_";
+  std::random_device seeder;
+  std::mt19937 engine{ seeder() };
+  std::uniform_int_distribution<int> rand_transform_val {0, 4};
+  std::uniform_int_distribution<char> rand_letter { 'a', 'z' };
+  std::uniform_int_distribution<int> rand_ascii_remove_count {1, 25};
+  std::uniform_int_distribution<int> rand_small_test_size { 30, 50 };
+  std::uniform_int_distribution<int> rand_large_test_size { 10000, 50000 };
+  
+  std::string generate_test(int length, bool valid) {
+    std::string test_ascii = ascii;
+    std::shuffle(test_ascii.begin(), test_ascii.end(), engine);
+    
+    if (!valid) {
+      int chars_to_remove = rand_ascii_remove_count(engine);
+      test_ascii.erase(0, chars_to_remove);
+    }
+    
+    std::string test_string = test_ascii;
+    test_string.resize(length);
+
+    auto test_ascii_size = test_ascii.size();
+    test_ascii += filler;
+    std::uniform_int_distribution<size_t> rand_test_char_idx { 0, test_ascii.size() - 1 };
+    std::generate(test_string.begin() + test_ascii_size, test_string.end(), [&]() { return test_ascii[rand_test_char_idx(engine)]; });
+    
+    std::transform(test_string.begin(), test_string.end(), test_string.begin(), [&](char c) -> char {
+      if (rand_transform_val(engine) == 0)
+        return std::toupper(c);
+      return c;
+    });
+    
+    std::shuffle(test_string.begin(), test_string.end(), engine);
+    return test_string;
+  }
+public:
+    void SetUp() {
+      ascii.resize(26);
+      std::iota(ascii.begin(), ascii.end(), 'a');
+    };
+  
     It(random_tests_small) {
-        randomTestCase(100, 46);
+      for(int i = 0; i < 25; ++i) {
+        std::string test_string = generate_test(rand_small_test_size(engine), true);
+        Assert::That(is_pangram(test_string), Equals(true), [&]() { return "Incorrect answer for " + test_string; });
+      }
+      for(int i = 0; i < 25; ++i) {
+        std::string test_string = generate_test(rand_small_test_size(engine), false);
+        Assert::That(is_pangram(test_string), Equals(false), [&]() { return "Incorrect answer for " + test_string; });
+      }
     };
 
     It(random_tests_large) {
-        randomTestCase(100, 100000);
+      for(int i = 0; i < 25; ++i) {
+        Assert::That(is_pangram(generate_test(rand_large_test_size(engine), true)), Equals(true));
+      }
+      for(int i = 0; i < 25; ++i) {
+        Assert::That(is_pangram(generate_test(rand_large_test_size(engine), false)), Equals(false));
+      }
     };
-
-    It(random_tests_larger) {
-        randomTestCase(50, 1000000);
-    }
 };
